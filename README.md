@@ -1,11 +1,11 @@
-# guld-git-host
+# guld-git-host-github
 
-Configuration manager for git hosts.
+Guld configuration manager for github.
 
 ### Install
 
 ```
-npm i -g guld-git-host
+npm i guld-git-host-github
 ```
 
 ### Usage
@@ -13,6 +13,5 @@ npm i -g guld-git-host
 ##### Node
 
 ```
-const { init } = require('guld-git-host')
+const github = require('guld-git-host-github')
 ```
-
