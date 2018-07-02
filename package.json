@@ -1,7 +1,7 @@
 {
-  "name": "guld-git-path",
-  "version": "1.0.0",
-  "description": "Guld tool for getting the git directory of a path, or converting local paths into git-friendly repo names.",
+  "name": "guld-git-host-github",
+  "version": "0.1.0",
+  "description": "Guld configuration manager for github.",
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/mocha/bin/_mocha",
@@ -16,8 +16,11 @@
   "author": "isysd",
   "license": "MIT",
   "dependencies": {
-    "guld-fs": "^1.0.0",
-    "user-home": "^2.0.0"
+    "github-api": "^3.0.0",
+    "got": "^8.3.1",
+    "guld-git-config": "^1.1.2",
+    "guld-pass": "^0.5.0",
+    "guld-user": "^0.4.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
