@@ -103,5 +103,9 @@ module.exports = {
   getClient: getClient,
   createRepo: createRepo,
   listRepos: listRepos,
-  deleteRepo: deleteRepo
+  deleteRepo: deleteRepo,
+  meta: {
+    'url': 'github.com',
+    'oauth-required': false
+  }
 }
