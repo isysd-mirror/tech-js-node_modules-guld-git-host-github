@@ -1,65 +1,75 @@
 const GitHub = require('github-api')
 const { getName } = require('guld-user')
-const { getConfig } = require('guld-git-config')
-const { show, parsePass } = require('guld-pass')
+const { getPass, getHostName } = require('guld-git-host').util
 const got = require('got')
-var gh
+const HOST = 'github'
+var client
 
-async function getGithubName (user) {
+async function getClient (user) {
   user = user || await getName()
-  var cfg = await getConfig('public', user)
-  if (cfg && cfg.host && cfg.host.github) return cfg.host.github
-}
-
-async function getGithub (user) {
-  user = user || await getName()
-  var pass = parsePass(await show(`${user}/git/github`))
+  var pass = await getPass(user, HOST)
   return new GitHub({
     username: pass.login,
     password: pass.password
   })
 }
 
-async function createRepo (options, user) {
+function parseRepo (repo) {
+  var privacy
+  var mainbranch
+  if (repo.private) privacy = 'private'
+  else privacy = 'public'
+  if (repo.default_branch) mainbranch = repo.default_branch
+  else mainbranch = repo.owner.login
+  return {
+    name: repo.name,
+    privacy: privacy,
+    owner: repo.owner.login,
+    mainbranch: mainbranch
+  }
+}
+
+async function createRepo (rname, user, privacy = 'public', options = {}) {
   user = user || await getName()
-  var ghuser = await getGithubName(user) || user
+  var hostuser = await getHostName(user, HOST) || user
   // validate required field(s)
-  if (!options.hasOwnProperty('name')) throw new Error('Name is required to create repo.')
+  if (typeof rname !== 'string' || rname.length === 0) throw new Error('Name is required to create repo.')
+  options.name = rname
   // override destructive merge strategies
   if (!options.hasOwnProperty('allow_squash_merge')) options.allow_squash_merge = false // eslint-disable-line camelcase
   // if (!options.hasOwnProperty('allow_merge_commit')) options.allow_merge_commit = false
   if (!options.hasOwnProperty('allow_rebase_merge')) options.allow_rebase_merge = false // eslint-disable-line camelcase
-  gh = gh || await getGithub(user)
-  var account = gh.getUser(ghuser)
+  client = client || await getClient(user)
+  var account = client.getUser(hostuser)
   var resp = await account.createRepo(options)
-  if (resp.status < 300) return resp.data
+  if (resp.status < 300) return parseRepo(resp.data)
   else throw new Error(`Github API Error: ${resp.statusText}`)
 }
 
 async function listRepos (user) {
   user = user || await getName()
-  var ghuser = await getGithubName(user) || user
-  var url = `https://api.github.com/users/${ghuser}/repos`
-  var pass = parsePass(await show(`${user}/git/github`))
+  var hostuser = await getHostName(user, HOST) || user
+  var url = `https://api.github.com/users/${hostuser}/repos`
+  var pass = await getPass(user, HOST)
   var resp = await got(url, {
     auth: `${pass.login}:${pass.password}`,
     json: true
   })
-  return resp.body
+  return resp.body.map(parseRepo)
 }
 
 async function deleteRepo (rname, user) {
   user = user || await getName()
-  var ghuser = await getGithubName(user) || user
-  gh = gh || await getGithub(user)
-  var repo = gh.getRepo(ghuser, rname)
+  var hostuser = await getHostName(user, HOST) || user
+  client = client || await getClient(user)
+  var repo = client.getRepo(hostuser, rname)
   var resp = await repo.deleteRepo()
   if (resp.status >= 300) throw new Error(`Github API Error: ${resp.statusText}`)
 }
 
 // TODO functions to port from guld-chrome
 /*
-async function getGHKeys () {
+async function getclientKeys () {
   var keys = JSON.parse(await this.observer.curl(`https://api.github.com/users/${this.observer.hosts.github.name}/gpg_keys`))
   if (keys.length !== 0) {
     this.observer.hosts.github.keyid = keys[0].key_id
@@ -69,15 +79,15 @@ async function getGHKeys () {
   }
 }
 
-async function setupGHKey () { // eslint-disable-line no-unused-vars
-  if (!self.ghkeyid || self.ghkeyid.length === 0) {
+async function setupclientKey () { // eslint-disable-line no-unused-vars
+  if (!self.clientkeyid || self.clientkeyid.length === 0) {
     return self.observer.curl(`https://api.github.com/user/gpg_keys`,
       {
         'method': 'POST',
         'body': JSON.stringify({'armored_public_key': self.keyring.publicKeys.getForId(self.guldfpr).armor()})
       }
-    ).then(getGHKeys)
-  } else return getGHKeys()
+    ).then(getclientKeys)
+  } else return getclientKeys()
 }
 
 async function createPR (org, repo) {
@@ -90,7 +100,7 @@ async function createPR (org, repo) {
 */
 
 module.exports = {
-  getGithub: getGithub,
+  getClient: getClient,
   createRepo: createRepo,
   listRepos: listRepos,
   deleteRepo: deleteRepo
