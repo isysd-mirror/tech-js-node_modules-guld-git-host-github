@@ -1,6 +1,6 @@
 {
   "name": "guld-git-host-github",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Guld configuration manager for github.",
   "main": "index.js",
   "scripts": {
