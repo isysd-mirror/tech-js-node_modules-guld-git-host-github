@@ -1,13 +1,13 @@
 const GitHub = require('github-api')
-const { getName } = require('guld-user')
-const { getPass, getHostName } = require('guld-git-host').util
+const { getName, getAlias } = require('guld-user')
+const { getPass } = require('guld-pass')
 const got = require('got')
 const HOST = 'github'
 var client
 
 async function getClient (user) {
   user = user || await getName()
-  var pass = await getPass(user, HOST)
+  var pass = await getPass(`${user}/git/${HOST}`)
   return new GitHub({
     username: pass.login,
     password: pass.password
@@ -31,7 +31,7 @@ function parseRepo (repo) {
 
 async function createRepo (rname, user, privacy = 'public', options = {}) {
   user = user || await getName()
-  var hostuser = await getHostName(user, HOST) || user
+  var hostuser = await getAlias(user, HOST) || user
   // validate required field(s)
   if (typeof rname !== 'string' || rname.length === 0) throw new Error('Name is required to create repo.')
   options.name = rname
@@ -48,9 +48,9 @@ async function createRepo (rname, user, privacy = 'public', options = {}) {
 
 async function listRepos (user) {
   user = user || await getName()
-  var hostuser = await getHostName(user, HOST) || user
+  var hostuser = await getAlias(user, HOST) || user
   var url = `https://api.github.com/users/${hostuser}/repos`
-  var pass = await getPass(user, HOST)
+  var pass = await getPass(`${user}/git/${HOST}`)
   var resp = await got(url, {
     auth: `${pass.login}:${pass.password}`,
     json: true
@@ -60,7 +60,7 @@ async function listRepos (user) {
 
 async function deleteRepo (rname, user) {
   user = user || await getName()
-  var hostuser = await getHostName(user, HOST) || user
+  var hostuser = await getAlias(user, HOST) || user
   client = client || await getClient(user)
   var repo = client.getRepo(hostuser, rname)
   var resp = await repo.deleteRepo()
