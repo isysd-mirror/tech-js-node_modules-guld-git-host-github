@@ -1,9 +1,13 @@
 const GitHub = require('github-api')
 const { getName, getAlias } = require('guld-user')
 const { getPass } = require('guld-pass')
+const { getFS } = require('guld-fs')
 const got = require('got')
+const path = require('path')
+const home = require('user-home')
 const HOST = 'github'
 var client
+var fs
 
 async function getClient (user) {
   user = user || await getName()
@@ -67,6 +71,28 @@ async function deleteRepo (rname, user) {
   if (resp.status >= 300) throw new Error(`Github API Error: ${resp.statusText}`)
 }
 
+async function addSSHKey (key) {
+  var user = await getName()
+  fs = fs || await getFS()
+  key = key || await fs.readFile(path.join(home, '.ssh', 'id_rsa.pub'), 'utf-8')
+  var url = `https://api.github.com/user/keys`
+  var pass = await getPass(`${user}/git/${HOST}`)
+  var options = {
+    auth: `${pass.login}:${pass.password}`,
+    json: true,
+    body: {
+      'title': `${user}-guld-key`,
+      'key': key
+    },
+    method: 'POST'
+  }
+  try {
+    await got(url, options)
+  } catch (e) {
+    if (e.statusCode !== 422 || e.statusMessage !== 'Unprocessable Entity') throw e
+  }
+}
+
 // TODO functions to port from guld-chrome
 /*
 async function getclientKeys () {
@@ -104,6 +130,7 @@ module.exports = {
   createRepo: createRepo,
   listRepos: listRepos,
   deleteRepo: deleteRepo,
+  addSSHKey: addSSHKey,
   meta: {
     'url': 'github.com',
     'oauth-required': false

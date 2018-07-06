@@ -18,8 +18,10 @@
   "dependencies": {
     "github-api": "^3.0.0",
     "got": "^8.3.2",
+    "guld-fs": "^1.1.0",
     "guld-pass": "^0.5.1",
-    "guld-user": "^0.5.0"
+    "guld-user": "^0.5.1",
+    "user-home": "^2.0.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
