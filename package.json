@@ -1,6 +1,6 @@
 {
   "name": "guld-git-host-github",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Guld configuration manager for github.",
   "main": "index.js",
   "scripts": {
@@ -19,8 +19,8 @@
     "github-api": "^3.0.0",
     "got": "^8.3.2",
     "guld-fs": "^1.2.5",
-    "guld-pass": "^0.5.1",
-    "guld-user": "^0.5.1",
+    "guld-pass": "^0.5.2",
+    "guld-user": "^0.5.2",
     "user-home": "^2.0.0"
   },
   "devDependencies": {
