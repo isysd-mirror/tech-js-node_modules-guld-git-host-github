@@ -11,7 +11,8 @@ var fs
 
 async function getClient (user) {
   user = user || await getName()
-  var pass = await getPass(`${user}/git/${HOST}`)
+  var passuser = process.env.PASSUSER || process.env.USER || user
+  var pass = await getPass(`${passuser}/git/${HOST}`)
   return new GitHub({
     username: pass.login,
     password: pass.password
@@ -45,9 +46,17 @@ async function createRepo (rname, user, privacy = 'public', options = {}) {
   if (!options.hasOwnProperty('allow_rebase_merge')) options.allow_rebase_merge = false // eslint-disable-line camelcase
   client = client || await getClient(user)
   var account = client.getUser(hostuser)
-  var resp = await account.createRepo(options)
-  if (resp.status < 300) return parseRepo(resp.data)
-  else throw new Error(`Github API Error: ${resp.statusText}`)
+  var resp
+  try {
+    resp = await account.createRepo(options)
+  } catch (e) {
+    var account = client.getOrganization(hostuser)
+    resp = await account.createRepo(options)
+    if (resp.status < 300) return parseRepo(resp.data)
+    else throw new Error(`Github API Error: ${resp.statusText}`)
+  } finally {
+    if (resp.status < 300) return parseRepo(resp.data)
+  }
 }
 
 async function listRepos (user) {
