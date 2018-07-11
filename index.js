@@ -50,13 +50,12 @@ async function createRepo (rname, user, privacy = 'public', options = {}) {
   try {
     resp = await account.createRepo(options)
   } catch (e) {
-    var account = client.getOrganization(hostuser)
+    account = client.getOrganization(hostuser)
     resp = await account.createRepo(options)
     if (resp.status < 300) return parseRepo(resp.data)
     else throw new Error(`Github API Error: ${resp.statusText}`)
-  } finally {
-    if (resp.status < 300) return parseRepo(resp.data)
   }
+  if (resp.status < 300) return parseRepo(resp.data)
 }
 
 async function listRepos (user) {
