@@ -36,7 +36,9 @@ function parseRepo (repo) {
 
 async function createRepo (rname, user, privacy = 'public', options = {}) {
   user = user || await getName()
-  var hostuser = await getAlias(user, HOST) || user
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
   // validate required field(s)
   if (typeof rname !== 'string' || rname.length === 0) throw new Error('Name is required to create repo.')
   options.name = rname
@@ -60,7 +62,9 @@ async function createRepo (rname, user, privacy = 'public', options = {}) {
 
 async function listRepos (user) {
   user = user || await getName()
-  var hostuser = await getAlias(user, HOST) || user
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
   var url = `https://api.github.com/users/${hostuser}/repos`
   var pass = await getPass(`${user}/git/${HOST}`)
   var resp = await got(url, {
@@ -72,7 +76,9 @@ async function listRepos (user) {
 
 async function deleteRepo (rname, user) {
   user = user || await getName()
-  var hostuser = await getAlias(user, HOST) || user
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
   client = client || await getClient(user)
   var repo = client.getRepo(hostuser, rname)
   var resp = await repo.deleteRepo()
@@ -99,6 +105,90 @@ async function addSSHKey (key) {
   } catch (e) {
     if (e.statusCode !== 422 || e.statusMessage !== 'Unprocessable Entity') throw e
   }
+}
+
+async function getIssuesByTitle (user, rname, title) {
+  user = user || await getName()
+  var passuser = process.env.PASSUSER || process.env.USER || user
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
+  var pass = await getPass(`${passuser}/git/${HOST}`)
+  utitle = encodeURIComponent(`"${title}"`)
+  var url = `https://api.github.com/search/issues?q=${utitle}+user:${hostuser}+repo:${encodeURIComponent(rname)}+in:title+type:issue`
+  var options = {
+    json: true
+  }
+  var issues = {body: {items: []}}
+  try {
+    var issues = await got(url, options)
+  } catch (e) {
+    issues = {body: {items: []}}
+  }
+  return issues.body.items.filter(i => i.title === title)
+}
+
+async function getUser (user) {
+  user = user || await getName()
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
+  client = client || await getClient(user)
+  var resp = await client.getUser(hostuser).getProfile()
+  if (resp && resp.status && resp.status < 300) return resp.data
+}
+
+async function addEditIssue (user, rname, title, body, state='open') {
+  user = user || await getName()
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
+  client = client || await getClient(user)
+  var issues = await getIssuesByTitle(user, rname, title)
+  if (issues.length === 0) {
+    var resp = await client.getIssues(hostuser, rname).createIssue({
+      title: title,
+      body: body,
+      label: [
+        'airdrop'
+      ]
+    })
+  } else {
+    await Promise.all(issues.map(async i => {
+      await client.getIssues(hostuser, rname).editIssue(i.number, {
+        title: title,
+        body: body,
+        state: state,
+        label: [
+          'airdrop'
+        ]
+      })
+    }))
+  }
+}
+
+
+async function closeIssue (user, rname, title) {
+  user = user || await getName()
+  var hostuser = await getAlias(user, HOST)
+  if (hostuser === 'undefined' || hostuser === undefined) hostuser = user
+  else if (hostuser && Object.keys(hostuser).length === 0) hostuser = user
+  client = client || await getClient(user)
+  var issues = await getIssuesByTitle(user, rname, title)
+  if (issues.length > 0) {
+    await Promise.all(issues.map(async i => {
+      await client.getIssues(hostuser, rname).editIssue(i.number, {
+        title: i.title,
+        body: i.body,
+        state: state
+      })
+    }))
+  }
+}
+
+async function closeWithComment (user, rname, comment, number, title) {
+  await client.getIssues(hostuser, rname).createIssueComment(i.number, 'User Registration found. Sorry for any extra notifications.')
+  await client.getIssues(hostuser, rname).closeIssue(user, rname, title)
 }
 
 // TODO functions to port from guld-chrome
@@ -139,6 +229,8 @@ module.exports = {
   listRepos: listRepos,
   deleteRepo: deleteRepo,
   addSSHKey: addSSHKey,
+  addEditIssue: addEditIssue,
+  getUser: getUser,
   meta: {
     'url': 'github.com',
     'oauth-required': false

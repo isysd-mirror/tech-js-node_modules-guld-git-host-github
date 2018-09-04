@@ -44,6 +44,6 @@
   "engines": {
     "node": ">=7"
   },
-  "homepage": "https://github.com/isysd/tech-js-node_modules-guld-git-host-github#readme",
-  "repository": "git@github.com:isysd/tech-js-node_modules-guld-git-host-github.git"
+  "homepage": "https://bitbucket.org/isysd/tech-js-node_modules-guld-git-host-github#readme",
+  "repository": "git@bitbucket.org:isysd/tech-js-node_modules-guld-git-host-github.git"
 }
